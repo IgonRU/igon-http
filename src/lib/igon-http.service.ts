@@ -4,39 +4,40 @@ import {HttpClient, HttpErrorResponse} from '@angular/common/http';
 import {Observable, throwError} from 'rxjs';
 import {IgonHttpError} from './igon-http-error';
 import {catchError, finalize, map} from 'rxjs/operators';
-import {IgonHttpErrorService} from "./igon-http-error.service";
-import {FunctionsHelper} from "@igon/helper";
+import {IgonHttpErrorService} from './igon-http-error.service';
+import {FunctionsHelper} from '@igon/helper';
 import {IgonHttpResponse} from './igon-http-response';
+import {IgonHttpStateService} from './igon-http-state.service';
 
 @Injectable()
 export class IgonHttpService {
 
-  apiPath: string = null;
+  hostName: string = null;
 
   config: IgonHttpConfig = null;
 
-  _token: string =  null;
   set token(value: string) {
-    this._token = value;
+    this.httpState.token = value;
   }
   get token(): string {
-    return this._token;
+    return this.httpState.token;
   }
 
   debugMode = false;
 
   constructor(protected httpConfig: IgonHttpConfig,
               protected http: HttpClient,
-              protected httpError: IgonHttpErrorService) {
+              protected httpError: IgonHttpErrorService,
+              protected httpState: IgonHttpStateService) {
 
     this.config = httpConfig;
-    this.apiPath = httpConfig.hostName;
+    this.hostName = httpConfig.hostName;
     this.debugMode = this.httpConfig.debugMode;
 
     if (this.debugMode) console.log('IgonHttpService constructor called!', this.httpConfig);
   }
 
-  getErrorHandlerEvent():EventEmitter<IgonHttpError> {
+  getErrorHandlerEvent(): EventEmitter<IgonHttpError> {
     return this.httpError.eventErrorHandled$;
   }
 
@@ -50,12 +51,14 @@ export class IgonHttpService {
     return throwError(igonError);
   }
 
-  public sendGet(url: string, params: any = {}, options: any = {}, clearUrl = false): Observable<any> {
+  public sendGet(url: string, params: any = {}, options: any = {}, hostName: string = null, clearUrl = false): Observable<any> {
     if (this.debugMode) console.log('IgonHttpService  get: ', url, ', params: ', params, ', options: ', options, ', clearUrl: ', clearUrl);
+
+    const host = hostName ? hostName : this.hostName;
 
     const fullUrl = clearUrl
       ? this.combineParams(url, {...this.getTokenParam(), ...params})
-      : this.apiPath + this.combineParams(url, {...this.getTokenParam(), ...params});
+      : host + this.combineParams(url, {...this.getTokenParam(), ...params});
 
     return this.http.get(fullUrl,
       {withCredentials: true, ...options})
@@ -64,11 +67,13 @@ export class IgonHttpService {
       );
   }
 
-  public sendPost(url: string, data: any = {}, params: any = {}, options: any = {}): Observable<any> {
+  public sendPost(url: string, data: any = {}, params: any = {}, options: any = {}, hostName: string = null): Observable<any> {
     if (this.debugMode) console.log('IgonHttpService post: ', url, ', params: ', params, ', data: ', data, ', options: ', options);
 
+    const host = hostName ? hostName : this.hostName;
+
     return this.http.post(
-      this.apiPath + this.combineParams(url,
+      host + this.combineParams(url,
       {...this.getTokenParam()}),
       data,
       {withCredentials: true, ...options})
@@ -77,19 +82,23 @@ export class IgonHttpService {
       );
   }
 
-  public sendPut(url: string, data: any = {}, params: any = {}): Observable<any> {
+  public sendPut(url: string, data: any = {}, params: any = {}, hostName: string = null): Observable<any> {
     if (this.debugMode) console.log('IgonHttpService put: ', url, ', params: ', params, ', data: ', data);
 
-    return this.http.put(this.apiPath + this.combineParams(url, {...this.getTokenParam()}), data, {withCredentials: true})
+    const host = hostName ? hostName : this.hostName;
+
+    return this.http.put(host + this.combineParams(url, {...this.getTokenParam()}), data, {withCredentials: true})
       .pipe(
         catchError((error) => this.handleError(error))
       );
   }
 
-  public sendDelete(url: string, params: any = {}): Observable<any> {
+  public sendDelete(url: string, params: any = {}, hostName: string = null): Observable<any> {
     if (this.debugMode) console.log('IgonHttpService delete: ', url, ', params: ', params);
 
-    return this.http.delete(this.apiPath + this.combineParams(url, {...this.getTokenParam(), ...params}), {withCredentials: true})
+    const host = hostName ? hostName : this.hostName;
+
+    return this.http.delete(host + this.combineParams(url, {...this.getTokenParam(), ...params}), {withCredentials: true})
       .pipe(
         catchError((error) => this.handleError(error))
       );
