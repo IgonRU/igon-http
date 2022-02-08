@@ -1,5 +1,6 @@
 export class IgonHttpConfig {
   hostName: string =  null;
+  securityHostName: string = null;
   debugMode = false;
 
   constructor(data: any = null) {
@@ -12,5 +13,7 @@ export class IgonHttpConfig {
         }
       }
     }
+    if (this.securityHostName == null) this.securityHostName = this.hostName;
+    if (this.debugMode) console.log('IgonHttpConfig constructor called!', this);
   }
 }

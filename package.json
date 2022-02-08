@@ -1,6 +1,6 @@
 {
   "name": "@igon/http",
-  "version": "1.0.8",
+  "version": "1.0.10",
   "peerDependencies": {
     "@angular/common": ">=6.x",
     "@angular/core": ">=6.x"
